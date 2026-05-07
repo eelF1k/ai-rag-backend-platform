@@ -1,91 +1,91 @@
 # AI Backend Platform (RAG + Async + Observability)
 
-Backend-first pet project to match Python Backend Engineer requirements for AI products.
+Backend-first pet-проєкт під вимоги Python Backend Engineer для AI-продуктів.
 
-## Goal
-Build and scale AI-oriented backend services with:
+## Мета
+Побудувати й масштабувати AI-орієнтовані backend-сервіси з:
 - FastAPI + asyncio
-- REST API + internal/external integrations
-- RAG pipeline (retrieve -> rerank -> generate)
-- ChromaDB vector search
+- REST API + внутрішні/зовнішні інтеграції
+- RAG-пайплайном (retrieve -> rerank -> generate)
+- векторним пошуком ChromaDB
 - MySQL + MongoDB
-- Redis caching
-- retries, timeouts, error handling
-- metrics, logs, tracing
-- Docker + CI/CD (+ Kubernetes manifests as bonus)
+- кешуванням через Redis
+- retry, timeout і обробкою помилок
+- метриками, логами, трасуванням
+- Docker + CI/CD (+ Kubernetes маніфести як бонус)
 
-## Planned modules
-- `backend/app/api` - REST endpoints
-- `backend/app/rag` - RAG orchestration and retrieval
-- `backend/app/services` - business logic and async workflows
-- `backend/app/db` - MySQL + MongoDB adapters
-- `backend/app/observability` - metrics/logging/tracing
-- `backend/app/workers` - background jobs and queues
-- `infra/` - docker-compose, CI, k8s manifests
-- `docs/` - architecture, runbook, API, performance notes
+## Заплановані модулі
+- `backend/app/api` - REST ендпоінти
+- `backend/app/rag` - оркестрація RAG і retrieval
+- `backend/app/services` - бізнес-логіка та async-потоки
+- `backend/app/db` - адаптери MySQL + MongoDB
+- `backend/app/observability` - метрики/логування/трасування
+- `backend/app/workers` - фонові задачі та черги
+- `infra/` - docker-compose, CI, k8s маніфести
+- `docs/` - архітектура, runbook, API, нотатки з продуктивності
 
-## Stack (target)
+## Стек (цільовий)
 - Python, FastAPI, asyncio
 - MySQL, MongoDB
-- ChromaDB (and optional Qdrant adapter later)
+- ChromaDB (з можливістю додати Qdrant adapter пізніше)
 - Redis
-- OpenAI-compatible LLM provider (with mock fallback)
-- Prometheus metrics, structured logging, OpenTelemetry tracing
-- Docker Compose, GitHub Actions, gitlab-ci example
+- OpenAI-compatible LLM провайдер (з mock fallback)
+- Prometheus метрики, structured logging, OpenTelemetry tracing
+- Docker Compose, GitHub Actions, приклад gitlab-ci
 
-## Roadmap (commit by commit)
-0. Init repository and architecture skeleton
-1. FastAPI scaffold + config + health endpoints
-2. Docker compose (api + mysql + mongo + redis + chroma)
-3. Async DB layer (MySQL + Mongo) and repository pattern
-4. Document ingestion API + chunking
-5. Embeddings service + Chroma indexing
-6. Retrieval API + rerank stage
-7. RAG answer endpoint with LLM + fallback mock
-8. Retries/timeouts/circuit-breaker patterns
-9. Caching layer (Redis) + query optimization
-10. Observability (metrics + logs + tracing)
-11. Background workers (Redis streams or queue)
-12. Tests (unit + integration) and load smoke
+## Roadmap (коміт за комітом)
+0. Ініціалізація репозиторію та каркасу архітектури
+1. FastAPI scaffold + config + health ендпоінти
+2. Docker Compose (api + mysql + mongo + redis + chroma)
+3. Async DB layer (MySQL + Mongo) і repository pattern
+4. API для ingestion документів + chunking
+5. Сервіс embeddings + індексація в Chroma
+6. Retrieval API + стадія rerank
+7. RAG answer ендпоінт з LLM + fallback mock
+8. Патерни retries/timeouts/circuit-breaker
+9. Кешування (Redis) + оптимізація запитів
+10. Observability (метрики + логи + трасування)
+11. Фонові воркери (Redis streams або queue)
+12. Тести (unit + integration) і load smoke
 13. CI/CD (GitHub Actions + gitlab-ci.yml)
-14. k8s manifests + docs polish
+14. k8s маніфести + полірування документації
 
-## Run with Docker
+## Запуск через Docker
 ```bash
 docker compose up --build
 ```
 
-Services:
+Сервіси:
 - API: `http://localhost:8000`
-- API docs: `http://localhost:8000/docs`
+- Документація API: `http://localhost:8000/docs`
 - MySQL: `localhost:3306`
 - MongoDB: `localhost:27017`
 - Redis: `localhost:6379`
 - ChromaDB HTTP: `localhost:8001`
 
-## Quick checks
-- `GET /` -> service metadata
-- `GET /api/v1/health` -> health status
-- `GET /api/v1/ready` -> readiness status
-- `GET /api/v1/metrics` -> Prometheus metrics
-- `POST /api/v1/ingestion/text` -> async text chunking ingestion
-- `POST /api/v1/ingestion/text/async` -> enqueue ingestion task for background worker
-- `GET /api/v1/search?q=...` -> vector retrieval from ChromaDB
-- `POST /api/v1/rag/answer` -> retrieval + rerank + LLM answer (mock fallback)
+## Швидкі перевірки
+- `GET /` -> метадані сервісу
+- `GET /api/v1/health` -> статус health
+- `GET /api/v1/ready` -> статус readiness
+- `GET /api/v1/metrics` -> метрики Prometheus
+- `POST /api/v1/ingestion/text` -> async ingestion і chunking тексту
+- `POST /api/v1/ingestion/text/async` -> постановка ingestion задачі у фонову чергу
+- `GET /api/v1/search?q=...` -> векторний retrieval з ChromaDB
+- `POST /api/v1/rag/answer` -> retrieval + rerank + відповідь LLM (mock fallback)
 
-Notes:
-- Search/rerank/rag responses use Redis cache (cache-aside, TTL via `CACHE_TTL_S`).
-- Background ingestion worker runs as `worker` service in Docker Compose.
+Нотатки:
+- Відповіді search/rerank/rag використовують Redis cache (cache-aside, TTL через `CACHE_TTL_S`).
+- Фоновий ingestion worker працює як сервіс `worker` у Docker Compose.
 
 Load smoke:
 - `python backend/tools/load_smoke.py --base-url http://127.0.0.1:8000 --requests 30 --concurrency 10`
 
 CI/CD:
 - GitHub Actions pipeline: `.github/workflows/ci.yml`
-- GitLab CI example: `gitlab-ci.yml`
+- Приклад GitLab CI: `gitlab-ci.yml`
 
 Kubernetes:
-- Manifests: `infra/k8s/` (`config.yaml`, `workloads.yaml`, `services.yaml`)
-- Quick deploy: `kubectl apply -k infra/k8s`
-- Guide: `docs/k8s-deploy.md`
+- Маніфести: `infra/k8s/` (`config.yaml`, `workloads.yaml`, `services.yaml`)
+- Швидкий деплой: `kubectl apply -k infra/k8s`
+- Гайд: `docs/k8s-deploy.md`
 
