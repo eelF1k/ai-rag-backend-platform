@@ -72,3 +72,20 @@ Kubernetes:
 - Швидкий деплой: `kubectl apply -k infra/k8s`
 - Гайд: `docs/k8s-deploy.md`
 
+## Локальний запуск без Docker
+```bash
+pip install -r requirements.txt
+python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+```
+
+## Production readiness checklist
+- Перевірити доступність MySQL/MongoDB/Redis/Chroma до старту API.
+- Встановити реальні `LLM_API_KEY` та обмеження timeout/retry.
+- Увімкнути централізований збір логів і метрик.
+- Прогнати load smoke перед релізом і зафіксувати базові SLO-метрики.
+
+## Що показати на співбесіді
+- Як працює ланцюжок `ingestion -> retrieval -> rerank -> answer`.
+- Як кешування та retries знижують latency та кількість помилок.
+- Як метрики `latency/error` допомагають знайти bottleneck у проді.
+
