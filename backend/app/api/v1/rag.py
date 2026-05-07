@@ -1,7 +1,9 @@
+import asyncio
 from time import perf_counter
 
 from fastapi import APIRouter
 
+from app.core.settings import settings
 from app.observability.metrics import increment_error, observe_latency
 from app.schemas.rag import RAGAnswerRequest, RAGAnswerResponse
 from app.services.embeddings import EmbeddingsService
@@ -17,7 +19,10 @@ async def rag_answer(payload: RAGAnswerRequest):
     try:
         retrieval_limit = min(max(payload.top_k * 3, payload.top_k), 50)
         retrieval_service = EmbeddingsService()
-        retrieval_result = await retrieval_service.search(query=payload.question, limit=retrieval_limit)
+        retrieval_result = await asyncio.wait_for(
+            retrieval_service.search(query=payload.question, limit=retrieval_limit),
+            timeout=settings.request_timeout_s,
+        )
 
         documents = retrieval_result.get("documents", [[]])[0]
         metadatas = retrieval_result.get("metadatas", [[]])[0]
@@ -42,9 +47,12 @@ async def rag_answer(payload: RAGAnswerRequest):
             strategy=payload.strategy,
         )
 
-        llm_response = await LLMService().generate_answer(
-            question=payload.question,
-            contexts=reranked,
+        llm_response = await asyncio.wait_for(
+            LLMService().generate_answer(
+                question=payload.question,
+                contexts=reranked,
+            ),
+            timeout=settings.request_timeout_s + 5.0,
         )
 
         return RAGAnswerResponse(

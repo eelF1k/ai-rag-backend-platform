@@ -1,8 +1,15 @@
 from typing import Any
 
 import httpx
+from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.core.settings import settings
+from app.services.resilience import AsyncCircuitBreaker
+
+_llm_breaker = AsyncCircuitBreaker(
+    failure_threshold=settings.circuit_breaker_failures,
+    reset_timeout_s=settings.circuit_breaker_reset_timeout_s,
+)
 
 
 class LLMService:
@@ -10,15 +17,34 @@ class LLMService:
         if settings.llm_provider == "mock":
             return self._mock_answer(question=question, contexts=contexts)
 
+        if not _llm_breaker.allow():
+            fallback = self._mock_answer(question=question, contexts=contexts)
+            fallback["provider"] = f"{settings.llm_provider}-circuit-open"
+            fallback["used_fallback"] = True
+            return fallback
+
         try:
-            text = await self._call_openai_compatible(question=question, contexts=contexts)
+            text = await self._call_with_retry(question=question, contexts=contexts)
+            _llm_breaker.record_success()
             return {"answer": text, "provider": settings.llm_provider, "used_fallback": False}
         except Exception:
+            _llm_breaker.record_failure()
             # Graceful fallback keeps endpoint available in dev/local environments.
             fallback = self._mock_answer(question=question, contexts=contexts)
             fallback["provider"] = f"{settings.llm_provider}-fallback"
             fallback["used_fallback"] = True
             return fallback
+
+    async def _call_with_retry(self, question: str, contexts: list[dict[str, Any]]) -> str:
+        async for attempt in AsyncRetrying(
+            stop=stop_after_attempt(settings.max_retries),
+            wait=wait_exponential(multiplier=0.2, min=0.2, max=2.0),
+            retry=retry_if_exception_type((httpx.TimeoutException, httpx.HTTPError, RuntimeError)),
+            reraise=True,
+        ):
+            with attempt:
+                return await self._call_openai_compatible(question=question, contexts=contexts)
+        raise RuntimeError("Retry loop terminated unexpectedly")
 
     async def _call_openai_compatible(self, question: str, contexts: list[dict[str, Any]]) -> str:
         if not settings.llm_api_base or not settings.llm_api_key:
