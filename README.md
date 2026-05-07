@@ -72,3 +72,6 @@ Services:
 - `GET /api/v1/search?q=...` -> vector retrieval from ChromaDB
 - `POST /api/v1/rag/answer` -> retrieval + rerank + LLM answer (mock fallback)
 
+Notes:
+- Search/rerank/rag responses use Redis cache (cache-aside, TTL via `CACHE_TTL_S`).
+

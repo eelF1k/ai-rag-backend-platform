@@ -3,6 +3,7 @@ from time import perf_counter
 from fastapi import APIRouter, Query
 
 from app.observability.metrics import increment_error, observe_latency
+from app.services.cache import CacheService
 from app.services.embeddings import EmbeddingsService
 from app.services.rerank import RerankService
 
@@ -18,7 +19,18 @@ async def search_documents(
     Raw vector retrieval from Chroma without reranking.
     """
     started_at = perf_counter()
+    cache = CacheService()
+    cache_key = cache.search_key(query=q, limit=limit)
     service = EmbeddingsService()
+    cached = None
+    try:
+        cached = await cache.get_json(cache_key)
+    except Exception:
+        cached = None
+    if cached is not None:
+        observe_latency("search_vector", started_at)
+        return cached
+
     try:
         result = await service.search(query=q, limit=limit)
     except Exception:
@@ -42,7 +54,12 @@ async def search_documents(
                 "distance": distances[idx] if idx < len(distances) else None,
             }
         )
-    return {"query": q, "hits": hits}
+    response = {"query": q, "hits": hits}
+    try:
+        await cache.set_json(cache_key, response)
+    except Exception:
+        pass
+    return response
 
 
 @router.get("/rerank")
@@ -58,6 +75,17 @@ async def search_with_rerank(
     2) lexical rerank fallback service
     """
     started_at = perf_counter()
+    cache = CacheService()
+    cache_key = cache.rerank_key(query=q, limit=limit, retrieval_limit=retrieval_limit, strategy=strategy)
+    cached = None
+    try:
+        cached = await cache.get_json(cache_key)
+    except Exception:
+        cached = None
+    if cached is not None:
+        observe_latency("search_rerank", started_at)
+        return cached
+
     try:
         retrieval = await search_documents(q=q, limit=retrieval_limit)
         reranker = RerankService()
@@ -73,10 +101,15 @@ async def search_with_rerank(
     finally:
         observe_latency("search_rerank", started_at)
 
-    return {
+    response = {
         "query": q,
         "strategy": strategy,
         "retrieval_limit": retrieval_limit,
         "reranked_hits": reranked_hits,
     }
+    try:
+        await cache.set_json(cache_key, response)
+    except Exception:
+        pass
+    return response
 

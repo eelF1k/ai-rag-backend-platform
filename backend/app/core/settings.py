@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     max_retries: int = 3
     circuit_breaker_failures: int = 3
     circuit_breaker_reset_timeout_s: float = 30.0
+    cache_ttl_s: int = 120
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
