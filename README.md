@@ -84,3 +84,8 @@ CI/CD:
 - GitHub Actions pipeline: `.github/workflows/ci.yml`
 - GitLab CI example: `gitlab-ci.yml`
 
+Kubernetes:
+- Manifests: `infra/k8s/` (`config.yaml`, `workloads.yaml`, `services.yaml`)
+- Quick deploy: `kubectl apply -k infra/k8s`
+- Guide: `docs/k8s-deploy.md`
+

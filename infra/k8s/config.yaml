@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-rag-config
+data:
+  APP_ENV: "prod"
+  DEBUG: "0"
+  MONGODB_DB: "ai_ops"
+  CHROMA_HOST: "chroma"
+  CHROMA_PORT: "8000"
+  CACHE_TTL_S: "120"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ai-rag-secrets
+type: Opaque
+stringData:
+  MYSQL_DSN: "mysql+aiomysql://app:app@mysql:3306/ai_ops"
+  MONGODB_DSN: "mongodb://mongo:27017"
+  REDIS_URL: "redis://redis:6379/0"
+  LLM_PROVIDER: "mock"
+  LLM_API_BASE: ""
+  LLM_API_KEY: ""
+
