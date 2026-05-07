@@ -4,9 +4,9 @@ from fastapi import APIRouter, HTTPException, status
 
 from app.observability.metrics import increment_error, observe_latency
 from app.repositories import AuditEventRepository, IngestionJobRepository
-from app.schemas.ingestion import IngestionRequest, IngestionResponse
-from app.services.chunking import ChunkingService
-from app.services.embeddings import EmbeddingsService
+from app.schemas.ingestion import IngestionQueuedResponse, IngestionRequest, IngestionResponse
+from app.services.ingestion_processor import process_ingestion
+from app.services.queue import QueueService
 
 router = APIRouter(prefix="/ingestion", tags=["ingestion"])
 
@@ -16,28 +16,11 @@ async def ingest_text(payload: IngestionRequest):
     started_at = perf_counter()
     jobs_repo = IngestionJobRepository()
     audit_repo = AuditEventRepository()
-    chunking = ChunkingService()
-    embeddings = EmbeddingsService()
 
     job = await jobs_repo.create(source_name=payload.source_name)
     try:
-        chunks = await chunking.chunk_text(
-            text=payload.text,
-            chunk_size=payload.chunk_size,
-            overlap=payload.overlap,
-        )
-        index_result = await embeddings.index_chunks(source_name=payload.source_name, chunks=chunks)
-        await jobs_repo.mark_processed(job_id=job.id, chunks_count=len(chunks))
-        await audit_repo.add(
-            actor="system",
-            action="ingestion_complete",
-            payload={
-                "job_id": job.id,
-                "source_name": payload.source_name,
-                "chunks_count": len(chunks),
-                "indexed": index_result["indexed"],
-            },
-        )
+        result = await process_ingestion(job_id=job.id, payload=payload)
+        chunks = result["chunks"]
     except Exception as exc:
         increment_error("ingestion_text")
         await jobs_repo.mark_failed(job_id=job.id, error_message=str(exc))
@@ -57,4 +40,37 @@ async def ingest_text(payload: IngestionRequest):
         chunks_count=len(chunks),
         preview_chunks=preview,
     )
+
+
+@router.post("/text/async", response_model=IngestionQueuedResponse)
+async def ingest_text_async(payload: IngestionRequest):
+    started_at = perf_counter()
+    jobs_repo = IngestionJobRepository()
+    audit_repo = AuditEventRepository()
+    queue = QueueService()
+
+    job = await jobs_repo.create(source_name=payload.source_name)
+    try:
+        await queue.enqueue_ingestion(
+            {
+                "job_id": job.id,
+                "source_name": payload.source_name,
+                "text": payload.text,
+                "chunk_size": payload.chunk_size,
+                "overlap": payload.overlap,
+            }
+        )
+        await audit_repo.add(
+            actor="system",
+            action="ingestion_queued",
+            payload={"job_id": job.id, "source_name": payload.source_name},
+        )
+    except Exception as exc:
+        increment_error("ingestion_async_enqueue")
+        await jobs_repo.mark_failed(job_id=job.id, error_message=str(exc))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Enqueue failed") from exc
+    finally:
+        observe_latency("ingestion_async_enqueue", started_at)
+
+    return IngestionQueuedResponse(job_id=job.id, status="queued")
 

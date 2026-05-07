@@ -20,6 +20,26 @@ services:
     ports:
       - "8000:8000"
 
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["python", "-m", "app.workers.ingestion_worker"]
+    environment:
+      APP_ENV: dev
+      DEBUG: "1"
+      MYSQL_DSN: mysql+aiomysql://app:app@mysql:3306/ai_ops
+      MONGODB_DSN: mongodb://mongo:27017
+      MONGODB_DB: ai_ops
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_HOST: chroma
+      CHROMA_PORT: "8000"
+    depends_on:
+      - mysql
+      - mongo
+      - redis
+      - chroma
+
   mysql:
     image: mysql:8.4
     environment:

@@ -14,3 +14,8 @@ class IngestionResponse(BaseModel):
     chunks_count: int
     preview_chunks: list[str]
 
+
+class IngestionQueuedResponse(BaseModel):
+    job_id: int
+    status: str
+

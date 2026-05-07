@@ -69,9 +69,11 @@ Services:
 - `GET /api/v1/ready` -> readiness status
 - `GET /api/v1/metrics` -> Prometheus metrics
 - `POST /api/v1/ingestion/text` -> async text chunking ingestion
+- `POST /api/v1/ingestion/text/async` -> enqueue ingestion task for background worker
 - `GET /api/v1/search?q=...` -> vector retrieval from ChromaDB
 - `POST /api/v1/rag/answer` -> retrieval + rerank + LLM answer (mock fallback)
 
 Notes:
 - Search/rerank/rag responses use Redis cache (cache-aside, TTL via `CACHE_TTL_S`).
+- Background ingestion worker runs as `worker` service in Docker Compose.
 
