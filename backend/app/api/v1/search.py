@@ -40,6 +40,7 @@ async def search_with_rerank(
     q: str = Query(..., min_length=1, description="Search query"),
     limit: int = Query(5, ge=1, le=20),
     retrieval_limit: int = Query(15, ge=5, le=50),
+    strategy: str = Query("hybrid", pattern="^(hybrid|lexical)$"),
 ):
     """
     Two-step retrieval:
@@ -48,10 +49,16 @@ async def search_with_rerank(
     """
     retrieval = await search_documents(q=q, limit=retrieval_limit)
     reranker = RerankService()
-    reranked_hits = reranker.rerank(query=q, hits=retrieval["hits"], limit=limit)
+    reranked_hits = reranker.rerank(
+        query=q,
+        hits=retrieval["hits"],
+        limit=limit,
+        strategy=strategy,
+    )
 
     return {
         "query": q,
+        "strategy": strategy,
         "retrieval_limit": retrieval_limit,
         "reranked_hits": reranked_hits,
     }
