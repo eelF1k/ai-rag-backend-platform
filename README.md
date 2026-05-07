@@ -50,3 +50,21 @@ Build and scale AI-oriented backend services with:
 13. CI/CD (GitHub Actions + gitlab-ci.yml)
 14. k8s manifests + docs polish
 
+## Run with Docker
+```bash
+docker compose up --build
+```
+
+Services:
+- API: `http://localhost:8000`
+- API docs: `http://localhost:8000/docs`
+- MySQL: `localhost:3306`
+- MongoDB: `localhost:27017`
+- Redis: `localhost:6379`
+- ChromaDB HTTP: `localhost:8001`
+
+## Quick checks
+- `GET /` -> service metadata
+- `GET /api/v1/health` -> health status
+- `GET /api/v1/ready` -> readiness status
+

@@ -1,0 +1,58 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      APP_ENV: dev
+      DEBUG: "1"
+      MYSQL_DSN: mysql+aiomysql://app:app@mysql:3306/ai_ops
+      MONGODB_DSN: mongodb://mongo:27017
+      MONGODB_DB: ai_ops
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_HOST: chroma
+      CHROMA_PORT: "8000"
+    depends_on:
+      - mysql
+      - mongo
+      - redis
+      - chroma
+    ports:
+      - "8000:8000"
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ai_ops
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+      MYSQL_ROOT_PASSWORD: root
+    command: ["--default-authentication-plugin=mysql_native_password"]
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  chroma:
+    image: chromadb/chroma:1.0.20
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+
+volumes:
+  mysql_data:
+  mongo_data:
+  chroma_data:
