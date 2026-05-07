@@ -67,6 +67,7 @@ Services:
 - `GET /` -> service metadata
 - `GET /api/v1/health` -> health status
 - `GET /api/v1/ready` -> readiness status
+- `GET /api/v1/metrics` -> Prometheus metrics
 - `POST /api/v1/ingestion/text` -> async text chunking ingestion
 - `GET /api/v1/search?q=...` -> vector retrieval from ChromaDB
 

@@ -1,5 +1,8 @@
+from time import perf_counter
+
 from fastapi import APIRouter, Query
 
+from app.observability.metrics import increment_error, observe_latency
 from app.services.embeddings import EmbeddingsService
 from app.services.rerank import RerankService
 
@@ -14,8 +17,15 @@ async def search_documents(
     """
     Raw vector retrieval from Chroma without reranking.
     """
+    started_at = perf_counter()
     service = EmbeddingsService()
-    result = await service.search(query=q, limit=limit)
+    try:
+        result = await service.search(query=q, limit=limit)
+    except Exception:
+        increment_error("search_vector")
+        raise
+    finally:
+        observe_latency("search_vector", started_at)
 
     documents = result.get("documents", [[]])[0]
     metadatas = result.get("metadatas", [[]])[0]
@@ -47,14 +57,21 @@ async def search_with_rerank(
     1) vector search from Chroma
     2) lexical rerank fallback service
     """
-    retrieval = await search_documents(q=q, limit=retrieval_limit)
-    reranker = RerankService()
-    reranked_hits = reranker.rerank(
-        query=q,
-        hits=retrieval["hits"],
-        limit=limit,
-        strategy=strategy,
-    )
+    started_at = perf_counter()
+    try:
+        retrieval = await search_documents(q=q, limit=retrieval_limit)
+        reranker = RerankService()
+        reranked_hits = reranker.rerank(
+            query=q,
+            hits=retrieval["hits"],
+            limit=limit,
+            strategy=strategy,
+        )
+    except Exception:
+        increment_error("search_rerank")
+        raise
+    finally:
+        observe_latency("search_rerank", started_at)
 
     return {
         "query": q,

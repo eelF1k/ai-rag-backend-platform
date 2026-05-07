@@ -1,5 +1,8 @@
+from time import perf_counter
+
 from fastapi import APIRouter, HTTPException, status
 
+from app.observability.metrics import increment_error, observe_latency
 from app.repositories import AuditEventRepository, IngestionJobRepository
 from app.schemas.ingestion import IngestionRequest, IngestionResponse
 from app.services.chunking import ChunkingService
@@ -10,6 +13,7 @@ router = APIRouter(prefix="/ingestion", tags=["ingestion"])
 
 @router.post("/text", response_model=IngestionResponse)
 async def ingest_text(payload: IngestionRequest):
+    started_at = perf_counter()
     jobs_repo = IngestionJobRepository()
     audit_repo = AuditEventRepository()
     chunking = ChunkingService()
@@ -35,6 +39,7 @@ async def ingest_text(payload: IngestionRequest):
             },
         )
     except Exception as exc:
+        increment_error("ingestion_text")
         await jobs_repo.mark_failed(job_id=job.id, error_message=str(exc))
         await audit_repo.add(
             actor="system",
@@ -42,6 +47,8 @@ async def ingest_text(payload: IngestionRequest):
             payload={"job_id": job.id, "source_name": payload.source_name, "error": str(exc)},
         )
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ingestion failed") from exc
+    finally:
+        observe_latency("ingestion_text", started_at)
 
     preview = chunks[:3]
     return IngestionResponse(
