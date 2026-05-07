@@ -77,3 +77,6 @@ Notes:
 - Search/rerank/rag responses use Redis cache (cache-aside, TTL via `CACHE_TTL_S`).
 - Background ingestion worker runs as `worker` service in Docker Compose.
 
+Load smoke:
+- `python backend/tools/load_smoke.py --base-url http://127.0.0.1:8000 --requests 30 --concurrency 10`
+
