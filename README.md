@@ -80,3 +80,7 @@ Notes:
 Load smoke:
 - `python backend/tools/load_smoke.py --base-url http://127.0.0.1:8000 --requests 30 --concurrency 10`
 
+CI/CD:
+- GitHub Actions pipeline: `.github/workflows/ci.yml`
+- GitLab CI example: `gitlab-ci.yml`
+
