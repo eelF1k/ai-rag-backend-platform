@@ -1,6 +1,6 @@
 # AI Backend Platform (RAG + Async + Observability)
 
-Backend pet-проєкт Python Backend Engineer.
+Backend-first pet-проєкт під вимоги Python Backend Engineer для AI-продуктів.
 
 ## Мета
 Побудувати й масштабувати AI-орієнтовані backend-сервіси з:
@@ -32,6 +32,23 @@ Backend pet-проєкт Python Backend Engineer.
 - OpenAI-compatible LLM провайдер (з mock fallback)
 - Prometheus метрики, structured logging, OpenTelemetry tracing
 - Docker Compose, GitHub Actions, приклад gitlab-ci
+
+## Roadmap (коміт за комітом)
+0. Ініціалізація репозиторію та каркасу архітектури
+1. FastAPI scaffold + config + health ендпоінти
+2. Docker Compose (api + mysql + mongo + redis + chroma)
+3. Async DB layer (MySQL + Mongo) і repository pattern
+4. API для ingestion документів + chunking
+5. Сервіс embeddings + індексація в Chroma
+6. Retrieval API + стадія rerank
+7. RAG answer ендпоінт з LLM + fallback mock
+8. Патерни retries/timeouts/circuit-breaker
+9. Кешування (Redis) + оптимізація запитів
+10. Observability (метрики + логи + трасування)
+11. Фонові воркери (Redis streams або queue)
+12. Тести (unit + integration) і load smoke
+13. CI/CD (GitHub Actions + gitlab-ci.yml)
+14. k8s маніфести + полірування документації
 
 ## Запуск через Docker
 ```bash
@@ -88,4 +105,9 @@ python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 - Як працює ланцюжок `ingestion -> retrieval -> rerank -> answer`.
 - Як кешування та retries знижують latency та кількість помилок.
 - Як метрики `latency/error` допомагають знайти bottleneck у проді.
+
+## Рекомендована демо-послідовність
+1. Інгест тексту через `/api/v1/ingestion/text`.
+2. Пошук релевантних шматків через `/api/v1/search`.
+3. Генерація відповіді з цитатами через `/api/v1/rag/answer`.
 
